@@ -71,5 +71,9 @@ There was zero chance I'd be the first one in the lab on a Tuesday morning --- o
 
 ![the clock installed on the wall](figures/coffee.jpg)
 
-I'm writing this the night before, so I'll have to wait until morning to collect reactions. I intend to (unconvincingly tbh) play dumb until at least afternoon. My late arrival will be to my advantage here. Just in case inquisitive minds attempt a repair, I've helpfully labeled the back with the date of last servicing: April 1, 2025. So everyone can rest assured, the clock is behaving as it should.
+I'm writing this the night before, so I'll have to wait until morning to collect reactions. I intend to (unconvincingly tbh) play dumb until at least afternoon. My late arrival will be to my advantage here. Just in case inquisitive minds attempt a repair, I've helpfully labeled the back with the date of last servicing: April 1, 2025. So everyone can rest assured, the clock is behaving as it should. 
+
+Here's a short YouTube video of the clock in action. Turn sound up to hear the ticking and get the full effect!
+
+[![a link to the youtube video](figures/coffee-play.jpg)](https://youtu.be/3vpgnc2ZdwQ)
 
