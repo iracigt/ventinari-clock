@@ -1,9 +1,11 @@
 # Ventinari Clock: Functional Malfunctional Timekeeping
+
 **Date of Last Calibration: April 1, 2025**
 
 ![a normal looking wall clock](figures/clock_front.jpg)
 
 # The Goal
+
 Ever since I saw a [Hackaday post](https://hackaday.com/2011/10/06/vetinari-clock-will-drive-you-insane/) many many years ago about a clock designed to drive you mad, I knew I wanted one. Last fall, I decided the time would be right on [April 1st, 2025](https://en.wikipedia.org/wiki/April_Fools%27_Day). I blessed my computer science research lab with a clock that is clearly erratic, yet keeps time just fine. Installed the night before, it graced the wall above the coffee machine and presided over undergraduate office hours.
 
 This is the result. A 5 dollar clock from Target with a Pi Pico (RP2040) clone as the brains, designed to tick randomly with a average rate of one tick per second. This project is quick and dirty, banged out in an evening for only one day in the limelight. Shortcuts were taken, power was not optimized, and the overall mantra was "good enough". Oh and it's written in Rust, because why not? I also do research on strongly typed programming languages, so maybe I'm biased here.
@@ -11,17 +13,19 @@ This is the result. A 5 dollar clock from Target with a Pi Pico (RP2040) clone a
 The code's all here and a build-log follows below. If you feel like you need this in your (or your victim's) life, the design is for the taking. Would I recommend using my code? No. Will it break after a few days because I'm abusing both of the two components? Maybe. Can you do it anyway? Sure, why not.
 
 # Driving a Clock
+
 The first task is to control the clock from a microcontroller. Luckily your typical quartz clocks are very very simple. Buried inside the plastic housing, nestled beneath quite a chain of tiny plastic gears, is a minimal PCB. On it lives a epoxy blob IC, a trimmed quartz crystal, invariably 32.768 kHz, and a solenoid-like coil wrapped around a metal core. This chip's purpose in life is to divide by 32768 (aka 2^15) and create a pulse through the coil once per second. These pulses reverse polarity every tick. The effect is to turn a tiny rotor 180 degrees each time. The gearwork translates this into the motion of the hour, minute, and second hands.
 
-Thus to drive the clock programmatically, we need to supply these pulses. The alternating polarity is needed to flip the rotor around each time. Without reversing it, the rotor would align with the field of this electromagnet and then stay put. The _correct_ way to do this is with an H-bridge. That sounds like effort, so we'll just kludge it in software. Each end of the coil goes to a GPIO pin on the RP2040. These are kept low (push-pull mode), and each we pulse one high. By alternating which pin goes high, we create the alternate polarity pulses the coil needs. On the oscilloscope, it looks like this:
+Thus to drive the clock programmatically, we need to supply these pulses. The alternating polarity is needed to flip the rotor around each time. Without reversing it, the rotor would align with the field of this electromagnet and then stay put. The _correct_ way to do this is with an H-bridge. That sounds like effort, so we'll just kludge it in software. Each end of the coil goes to a GPIO pin on the RP2040. These are kept low (push-pull mode), and on each tick we pulse one high. By alternating which pin goes high, we create the alternate polarity pulses the coil needs. On the oscilloscope, it looks like this:
 
 ![two staggered pulse trains on an oscilloscope](figures/scope.jpg)
 
-To give the chip a little cushion from the inductive load, I also threw in a 100 ohm resistor in series. These clockworks are designed to be low power. The coil doesn't need that much current to tick. To make things a little smoother, I also reduced the GPIO drive strength to 2 mA --- the lowest setting on the RP2040. I had the whole thing disassembled (but forgot to take pictures), so tacking some tiny wires to the coil's PCB pads was a 30 second adventure with the soldering iron. Below I've used the pinnacle of hardware design software, Fritzing, to show exactly how simple this all really is. With that done, we've now got control over the ticks.
+To give the chip a little cushion from the inductive load, I also threw in a 100 ohm resistor in series. These clockworks are designed to be low power. The coil doesn't need that much current to tick. To make things a little smoother, I also reduced the GPIO drive strength to 2 mA --- the lowest setting on the RP2040. I'm still driving this a little hard, as evidenced by the bounce in the oscilloscope traces. I want a nice chonky tick sound, so I'll take the risk. I had the whole thing disassembled (but forgot to take pictures), so tacking some tiny wires to the coil's PCB pads was a 30 second adventure with the soldering iron. Below I've used the pinnacle of hardware design software, Fritzing, to show exactly how simple this all really is. With that done, we've now got control over the ticks.
 
 ![fritzing diagram of the mcu driving the coil](figures/fritzing.png)
 
 # Keeping Time With Markov Chains
+
 With the tick out of the way, next comes the randomness. I wanted something more erratic than subtle so the clock gets some attention. Simplicity and expediency are the goals, so I didn't want a complicated algorithm. We need the clock to keep reasonable time for about 24 hours. An ideal algorithm wouldn't rely on tracking the drift or history, be as simple as a lookup table, and be easy to verify and tune. Clearly the solution is AI --- _retro AI_.
 
 If you remember the spam of the 00's and the gibberish inside designed to fool statistical spam filters, you're familiar with the venerable Markov chain. It's just a state machine, where the transitions are probabilistic. Using the tiniest bit of linear algebra, we can compute the frequency of each state. I settled on a 4-state model where all the transition probabilities are fractions with a denominator of 16. This means taking a step just needs a 4x16 lookup table and a 4-bit random number. The base state machine with just the "normal" transitions looks like this:
@@ -36,10 +40,10 @@ Using this and a pygame simulation that plays a tick, I can see both the average
 
 $$ T =
 \begin{bmatrix}
-	\frac{ 1}{16} & \frac{14}{16} & \frac{ 0}{16} &\frac{ 1}{16} \\
-	\frac{ 1}{16} & \frac{ 1}{16} & \frac{13}{16} &\frac{ 1}{16} \\
-	\frac{ 0}{16} & \frac{ 0}{16} & \frac{ 2}{16} &\frac{14}{16} \\
-	\frac{14}{16} & \frac{ 1}{16} & \frac{ 1}{16} &\frac{ 0}{16} \\
+ \frac{ 1}{16} & \frac{14}{16} & \frac{ 0}{16} &\frac{ 1}{16} \\
+ \frac{ 1}{16} & \frac{ 1}{16} & \frac{13}{16} &\frac{ 1}{16} \\
+ \frac{ 0}{16} & \frac{ 0}{16} & \frac{ 2}{16} &\frac{14}{16} \\
+ \frac{14}{16} & \frac{ 1}{16} & \frac{ 1}{16} &\frac{ 0}{16} \\
 \end{bmatrix}
 $$
 
@@ -71,9 +75,8 @@ There was zero chance I'd be the first one in the lab on a Tuesday morning --- o
 
 ![the clock installed on the wall](figures/coffee.jpg)
 
-I'm writing this the night before, so I'll have to wait until morning to collect reactions. I intend to (unconvincingly tbh) play dumb until at least afternoon. My late arrival will be to my advantage here. Just in case inquisitive minds attempt a repair, I've helpfully labeled the back with the date of last servicing: April 1, 2025. So everyone can rest assured, the clock is behaving as it should. 
+I'm writing this the night before, so I'll have to wait until morning to collect reactions. I intend to (unconvincingly tbh) play dumb until at least afternoon. My late arrival will be to my advantage here. Just in case inquisitive minds attempt a repair, I've helpfully labeled the back with the date of last servicing: April 1, 2025. So everyone can rest assured, the clock is behaving as it should.
 
 Here's a short YouTube video of the clock in action. Turn sound up to hear the ticking and get the full effect!
 
 [![a link to the youtube video](figures/coffee-play.jpg)](https://youtu.be/3vpgnc2ZdwQ)
-
